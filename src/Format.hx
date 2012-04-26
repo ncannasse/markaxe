@@ -8,8 +8,8 @@ private enum Token {
 	THead( count : Int );
 	TTagOpen( name : String, attrib : String );
 	TTagClose( name : String );
-	TCodeOpen( name : String, attrib : String );
-	TCodeClose( name : String );
+	TNodeOpen( name : String, attrib : String );
+	TNodeClose( name : String );
 	TList( count : Int );
 	TDouble( c : Int );
 }
@@ -19,7 +19,7 @@ private enum FlowItem {
 	Heading( k : Int, f : Flow );
 	Span( t : String, attrib : String, f : Flow );
 	Div( t : String, attrib : String, f : Flow );
-	Code( t : String, attrib : String, f : Flow );
+	Node( t : String, attrib : String, f : Flow );
 	Li( items : Array<FlowItem> );
 	Text( s : String );
 	LineBreak;
@@ -82,8 +82,8 @@ class Format {
 		return t;
 	}
 
-	public dynamic function formatCode( code : String, attrib : Null<String>, content : String ) {
-		if( code == "html" )
+	public dynamic function formatNode( node : String, attrib : Null<String>, content : String ) {
+		if( node == "html" )
 			return content;
 		return null;
 	}
@@ -192,7 +192,7 @@ class Format {
 				printFlow(f);
 				outTag();
 			}
-		case Code(t, a, f):
+		case Node(t, a, f):
 			var old = outBuf;
 			outBuf = new StringBuf();
 			for( f in f )
@@ -202,9 +202,9 @@ class Format {
 				}
 			var str = outBuf.toString();
 			outBuf = old;
-			var r = formatCode(t, a, str);
+			var r = formatNode(t, a, str);
 			if( r == null )
-				printFlow([Text(tokenStr(TCodeOpen(t, a)) + str + tokenStr(TCodeClose(t)))]);
+				printFlow([Text(tokenStr(TNodeOpen(t, a)) + str + tokenStr(TNodeClose(t)))]);
 			else
 				outBuf.add(r);
 		case Space:
@@ -229,8 +229,8 @@ class Format {
 		case TTagClose(name): "[/" + name + "]";
 		case TList(count): " *";
 		case TBlockEnd: "\n\n";
-		case TCodeOpen(name, attrib): "<" + name + (attrib == null ? "" : " " + attrib) + ">";
-		case TCodeClose(name): "</" + name + ">";
+		case TNodeOpen(name, attrib): "<" + name + (attrib == null ? "" : " " + attrib) + ">";
+		case TNodeClose(name): "</" + name + ">";
 		case TDouble(c): var c = String.fromCharCode(c); c + c;
 		};
 	}
@@ -358,20 +358,20 @@ class Format {
 				ignoreEnd();
 				return Div(name, attrib, flow);
 			}
-		case TCodeOpen(name, attrib):
+		case TNodeOpen(name, attrib):
 			var flow = new Array();
 			var buf = new StringBuf();
 			openedTags.push("code:"+name);
 			while( true ) {
 				t = token();
 				switch( t ) {
-				case TCodeOpen(_):
+				case TNodeOpen(_):
 					push(t);
 					flow.push(parseBlock(false));
 					continue;
 				case TEof:
 					break;
-				case TCodeClose(n2):
+				case TNodeClose(n2):
 					if( n2 == name )
 						break;
 					if( Lambda.has(openedTags, "code:" + n2) ) {
@@ -384,13 +384,13 @@ class Format {
 			}
 			openedTags.pop();
 			ignoreEnd();
-			return Code(name, attrib, flow);
+			return Node(name, attrib, flow);
 		case TTagClose(_):
 			if( limited ) {
 				push(t);
 				return null;
 			}
-		case TCodeClose(_):
+		case TNodeClose(_):
 			if( limited ) {
 				push(t);
 				return null;
@@ -475,7 +475,7 @@ class Format {
 					}
 				if( t == null ) break;
 				flow.push(Text(tokenStr(t)));
-			case TEof, THead(_), TList(_), TCodeOpen(_), TCodeClose(_):
+			case TEof, THead(_), TList(_), TNodeOpen(_), TNodeClose(_):
 				push(t);
 				break;
 			}
@@ -646,12 +646,12 @@ class Format {
 				}
 				pos++;
 			}
-			if( !close && formatCode(name, attrib, "") == null ) {
+			if( !close && formatNode(name, attrib, "") == null ) {
 				this.pos = start;
 				return TData('<');
 			}
 			this.pos = pos;
-			return close ? TCodeClose(name) : TCodeOpen(name, attrib);
+			return close ? TNodeClose(name) : TNodeOpen(name, attrib);
 		case "'".code, '*'.code, '/'.code, '-'.code:
 			// Protect urls
 			if( (pos < 2 || c != '/'.code || StringTools.fastCodeAt(buf, pos-2) != ':'.code) && StringTools.fastCodeAt(buf, pos) == c ) {

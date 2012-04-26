@@ -1,7 +1,7 @@
 class Tests {
 
 	static function eq( f : String, out : String, ?pos : haxe.PosInfos ) {
-		var fmt = new tid.Format().format(f);
+		var fmt = new Format().format(f);
 		if( fmt != out )
 			haxe.Log.trace(" ERROR\n  "+fmt+"\nshould be :\n  "+out+"\n",pos);
 	}
