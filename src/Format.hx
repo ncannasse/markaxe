@@ -44,7 +44,7 @@ class Format {
 	var inSpan : Int;
 	var inList : Int;
 	var newLine : Bool;
-	var cachedTokens : haxe.FastList<Token>;
+	var cachedTokens : haxe.ds.GenericStack<Token>;
 	var outBuf : StringBuf;
 
 	public function new() {
@@ -73,7 +73,7 @@ class Format {
 		// insec
 		t = t.split(" !").join("&nbsp;!").split(" :").join("&nbsp;:").split(" ?").join("&nbsp;?");
 		// autolinks
-		t = ~/(https?:\/\/[a-zA-Z0-9\/?;&%_.#=|-]+)/.customReplace(t, function(r) {
+		t = ~/(https?:\/\/[a-zA-Z0-9\/?;&%_.#=|-]+)/.map(t, function(r) {
 			var url = r.matched(1);
 			return '<a href="'+url+'" target="_blank">'+(url.length > 40 ? url.substr(0,37)+"..." : url)+'</a>';
 		});
@@ -95,7 +95,7 @@ class Format {
 		inList = 0;
 		newLine = true;
 		openedTags = new Array();
-		cachedTokens = new haxe.FastList<Token>();
+		cachedTokens = new haxe.ds.GenericStack<Token>();
 		var flow = [];
 		while( true ) {
 			var t = token();
@@ -510,7 +510,7 @@ class Format {
 			return t;
 		var pos = pos;
 		var c = StringTools.fastCodeAt(buf, pos++);
-		if( StringTools.isEOF(c) )
+		if( StringTools.isEof(c) )
 			return TEof;
 		switch( c ) {
 		case '\r'.code:
@@ -571,7 +571,7 @@ class Format {
 						start = pos;
 						while( true ) {
 							var c = StringTools.fastCodeAt(buf, pos);
-							if( StringTools.isEOF(c) || c == '\r'.code || c == '\n'.code ) {
+							if( StringTools.isEof(c) || c == '\r'.code || c == '\n'.code ) {
 								this.pos = old;
 								return TData('[');
 							}
@@ -624,7 +624,7 @@ class Format {
 						start = pos;
 						while( true ) {
 							var c = StringTools.fastCodeAt(buf, pos);
-							if( StringTools.isEOF(c) || c == '\r'.code || c == '\n'.code ) {
+							if( StringTools.isEof(c) || c == '\r'.code || c == '\n'.code ) {
 								this.pos = old;
 								return TData('<');
 							}
@@ -666,7 +666,7 @@ class Format {
 		var start = this.pos;
 		do {
 			c = StringTools.fastCodeAt(buf, pos++);
-			if( StringTools.isEOF(c) ) break;
+			if( StringTools.isEof(c) ) break;
 		} while( !t[c] );
 		this.pos = pos - 1;
 		newLine = false;
