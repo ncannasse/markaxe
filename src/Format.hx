@@ -73,7 +73,7 @@ class Format {
 		// insec
 		t = t.split(" !").join("&nbsp;!").split(" :").join("&nbsp;:").split(" ?").join("&nbsp;?");
 		// autolinks
-		t = ~/(https?:\/\/[a-zA-Z0-9\/?;&%_.#=|-]+)/.map(t, function(r) {
+		t = ~/(https?:\/\/[a-zA-Z0-9\/?;&%_.#=|-]+)/g.map(t, function(r) {
 			var url = r.matched(1);
 			return '<a href="'+url+'" target="_blank">'+(url.length > 40 ? url.substr(0,37)+"..." : url)+'</a>';
 		});
@@ -460,6 +460,26 @@ class Format {
 				var t2 = token();
 				if( !Type.enumEq(t2, TTagClose(name)) ) {
 					push(t2);
+					// try resuming
+					if( flow[flow.length - 1] == LineBreak ) {
+						var breaks = 0;
+						for( i in f )
+							if( i == LineBreak )
+								breaks++;
+							else
+								break;
+						if( breaks == f.length ) {
+							for( i in 0...breaks )
+								push(TNewLine);
+							if( breaks > 1 ) {
+								cachedTokens.pop();
+								cachedTokens.pop();
+								push(TBlockEnd);
+							}
+							push(t);
+							break;
+						}
+					}
 					flow.push(Text(tokenStr(t)));
 					for( i in f )
 						flow.push(i);
